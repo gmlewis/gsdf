@@ -26,20 +26,13 @@ type IRMFHeader struct {
 
 // WriteIRMF creates the IRMF shader program for calculating SDF and writes it to the writer.
 func (p *Programmer) WriteIRMF(w io.Writer, obj Shader3D, header IRMFHeader) (n int, objs []ShaderObject, err error) {
-	// 1. Serialize and write the JSON header wrapped in /*{ ... }*/
+	// 1. Serialize and write the JSON header wrapped in /*...*/
 	headerData, err := json.MarshalIndent(header, "", "  ")
 	if err != nil {
 		return 0, nil, err
 	}
-	// The IRMF spec says the header starts with /*{ and ends with }*/
-	// and contains JSON key-value pairs. Since json.MarshalIndent returns
-	// a full JSON object wrapped in {}, we trim those so as not to have
-	// double braces: /*{ { ... } }*/.
-	if len(headerData) >= 2 && headerData[0] == '{' && headerData[len(headerData)-1] == '}' {
-		headerData = headerData[1 : len(headerData)-1]
-	}
 
-	ngot, err := fmt.Fprintf(w, "/*{\n%s\n}*/\n", string(headerData))
+	ngot, err := fmt.Fprintf(w, "/*%s*/\n", headerData)
 	n += ngot
 	if err != nil {
 		return n, nil, err
@@ -52,11 +45,10 @@ func (p *Programmer) WriteIRMF(w io.Writer, obj Shader3D, header IRMFHeader) (n 
 		return n, objs, err
 	}
 
-	// 3. Append the IRMF-specific main function.
-	// We assume 1-4 materials for now as per the plan.
+	// 3. Append the IRMF-specific main function. (We assume 1-4 materials for now.)
 	ngot, err = fmt.Fprintf(w, `
 void mainModel4(out vec4 materials, in vec3 xyz) {
-	float d = %s(xyz);
+	float d = %v(xyz);
 	materials = vec4(d <= 0.0 ? 1.0 : 0.0, 0.0, 0.0, 0.0);
 }
 `,
