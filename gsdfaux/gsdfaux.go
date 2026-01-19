@@ -181,8 +181,7 @@ func RenderShader3D(s glbuild.Shader3D, cfg RenderConfig) (err error) {
 	}
 
 	if cfg.IRMFOutput != nil {
-		err = renderIRMF(cfg, s)
-		if err != nil {
+		if err := renderIRMF(cfg, s); err != nil {
 			return err
 		}
 	}
